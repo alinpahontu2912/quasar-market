@@ -89,6 +89,20 @@ namespace StoreFunctions
                   .HasMaxLength(12)
                   .IsUnicode(false)
                   .HasColumnName("phone");
+
+        entity.Property(e => e.Role).HasColumnName("role");
+
+        entity.Property(e => e.HashSalt)
+                  .IsRequired()
+                  .HasMaxLength(50)
+                  .IsUnicode(false)
+                  .HasColumnName("hashSalt");
+
+        entity.Property(e => e.RefreshToken)
+                  .IsRequired()
+                  .HasMaxLength(50)
+                  .IsUnicode(false)
+                  .HasColumnName("refreshToken");
       });
 
       OnModelCreatingPartial(modelBuilder);

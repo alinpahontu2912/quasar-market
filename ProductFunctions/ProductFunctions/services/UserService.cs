@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -26,13 +27,15 @@ namespace StoreFunctions
       return allUsers;
     }
 
-    public async Task<User> FindUser(string email, string password)
+    public async Task<User> LogInUser(string email, string password)
     {
       User wantedUser = null;
       using (var dataBase = new TrainingAlinContext())
       {
         wantedUser = await dataBase.Users.Where(user => user.Email == email).FirstAsync();
-        if (wantedUser.HashPass == Utils.hashPassword(password))
+        Console.Write(wantedUser.HashPass);
+        Console.Write(Utils.hashPassword(password, wantedUser.HashSalt));
+        if (wantedUser.HashPass == Utils.hashPassword(password, wantedUser.HashSalt))
         {
           return wantedUser;
         }
@@ -46,7 +49,10 @@ namespace StoreFunctions
       {
         try
         {
-          newUser.HashPass = Utils.hashPassword(newUser.HashPass);
+          Utils.secureUserFields(newUser);
+          if (dataBase.Users.FirstOrDefaultAsync(user => user.Email == newUser.Email) != null) {
+            return false;
+          }
           dataBase.Users.Add(newUser);
           await dataBase.SaveChangesAsync();
           return true;
@@ -58,6 +64,27 @@ namespace StoreFunctions
       }
 
 
+    }
+
+
+    public async Task<User> GetNewRefreshToken(HttpRequest req)
+    {
+      ValidateJWT validate = new(req);
+      User wantedUser = null;
+      using (var dataBase = new TrainingAlinContext())
+      {
+        if (validate.IsValid)
+        {
+          wantedUser = await dataBase.Users.Where(user => user.Email == validate.Username).FirstAsync();
+          if (wantedUser.RefreshToken == validate.RefreshToken)
+          {
+            wantedUser.RefreshToken = Utils.GenerateRefreshToken();
+            await dataBase.SaveChangesAsync();
+            return wantedUser;
+          }
+        }
+      }
+      return null;
     }
 
 

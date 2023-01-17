@@ -9,14 +9,9 @@ namespace StoreFunctions
 {
   public class ValidateJWT
   {
-    public bool IsValid
-    {
-      get;
-    }
-    public string Username
-    {
-      get;
-    }
+    public bool IsValid { get; }
+    public string Username { get; }
+    public string RefreshToken { get; }
     public ValidateJWT(HttpRequest request)
     {
       // Check if we have a header.
@@ -39,7 +34,9 @@ namespace StoreFunctions
           authorizationHeader = authorizationHeader.Substring(7);
         }
         // Validate the token and decode the claims.
-        claims = new JwtBuilder().WithAlgorithm(new HMACSHA256Algorithm()).WithSecret("Your Secret Securtity key string").MustVerifySignature().Decode<IDictionary<string, object>>(authorizationHeader);
+        claims = new JwtBuilder().WithAlgorithm(new HMACSHA256Algorithm())
+          .WithSecret(Environment.GetEnvironmentVariable($"ConnectionStrings:jwtKey", EnvironmentVariableTarget.Process))
+          .MustVerifySignature().Decode<IDictionary<string, object>>(authorizationHeader);
       }
       catch (Exception exception)
       {
@@ -50,8 +47,13 @@ namespace StoreFunctions
       {
         return;
       }
+      if (!claims.ContainsKey("refreshToken"))
+      {
+        return;
+      }
       IsValid = true;
       Username = Convert.ToString(claims["username"]);
+      RefreshToken = Convert.ToString(claims["refreshToken"]);
     }
   }
 }

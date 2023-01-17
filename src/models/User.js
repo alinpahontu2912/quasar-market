@@ -5,5 +5,6 @@ export class User {
     this.hashpass = hashpass
     this.phone = phone
     this.address = address
+    this.role = 1
   }
 }

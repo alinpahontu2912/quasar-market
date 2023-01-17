@@ -1,15 +1,20 @@
 <template>
-  <q-table style="height: 80vh;" virtual-scroll v-model:pagination="pagination" :rows-per-page-options="[0]"
-    :virtual-scroll-sticky-size-start="48" row-key="id" title="Products" :rows="rows" :columns="columns"
-    selection="multiple" :loading="loading">
+  <q-table ref="tableRef" style="height: 80vh;" v-model:pagination="pagination" row-key="id" title="Products"
+    :rows="rows" :columns="columns" selection="multiple" :loading="loading" :filter="filter" binary-state-sort
+    @request="onRequest">
     <template v-slot:loading>
       <q-inner-loading showing color="primary" />
     </template>
     <template v-slot:top-right>
-      <q-btn icon="add" @click="openNewProductForm" />
+      <q-input borderless dense debounce="300" v-model="filter" placeholder="Search" class="q-pa-sm">
+        <template v-slot:append>
+          <q-icon name="search" />
+        </template>
+      </q-input>
+      <q-btn class="q-pa-sm" icon="add" @click="openNewProductForm" />
     </template>
     <template v-slot:header-selection>
-      <q-btn flat icon="refresh" label="Refresh" @click="refresh" />
+      <q-btn flat icon="refresh" label="Refresh" @click="refresh(props)" />
     </template>
     <template v-slot:body-selection="scope">
       <q-btn flat icon="delete" @click="openDeletePopup(scope.row.id)">
@@ -67,12 +72,20 @@ import { ref, inject, onMounted } from 'vue'
 import NewProductFormVue from './NewProductForm.vue'
 import { EVENT_KEYS } from '../utils/eventKeys.js'
 import useHttpQuery from 'src/compositionFunctions/useHttpQuery'
-const { getNoPaginationProducts, deleteProduct, updateProductPrice } = useHttpQuery()
-const pagination = ref({ pagination: { rowsPerPage: 0 } })
+const { deleteProduct, updateProductPrice, getProductCount, getProductPage } = useHttpQuery()
+const pagination = ref({
+  sortBy: 'id',
+  descending: false,
+  page: 1,
+  rowsPerPage: 5,
+  rowsNumber: -1
+})
+const tableRef = ref()
 const selectedProdId = ref(-1)
 const firstDeletePopUp = ref(false)
 const deleteResult = ref('')
 const updateResult = ref('')
+const filter = ref('')
 const secondDialog = ref(false)
 const pricePopUp = ref(false)
 const loading = ref(false)
@@ -120,15 +133,8 @@ const columns = [{
 
 const rows = ref([])
 
-onMounted(() => {
-  refresh()
-})
-
 async function refresh() {
-  rows.value.length = 0
-  loading.value = true
-  rows.value = await getNoPaginationProducts()
-  loading.value = false
+  await tableRef.value.requestServerInteraction()
 }
 
 function openDeletePopup(productId) {
@@ -149,7 +155,6 @@ async function deleteFromDB(productId) {
   const result = await deleteProduct(productId)
   secondDialog.value = !secondDialog.value
   deleteResult.value = result ? 'Product removed' : 'Removal issue'
-  await refresh()
   loading.value = false
 }
 
@@ -157,7 +162,27 @@ function openNewProductForm() {
   bus.emit(EVENT_KEYS.NEW_PRODUCT, rows.value[rows.value.length - 1].id)
 }
 
-</script>
-<style lang="sass">
+async function onRequest(props) {
+  const { page, rowsPerPage, sortBy, descending } = props.pagination
+  loading.value = true
 
-</style>
+  pagination.value.rowsNumber = await getProductCount(filter.value)
+  const fetchCount = rowsPerPage === 0 ? pagination.value.rowsNumber : rowsPerPage
+  const startRow = page
+  const orderType = descending ? 'DESC' : 'ASC'
+  const returnedData = await getProductPage(startRow, fetchCount, sortBy, orderType, filter.value)
+
+  rows.value.splice(0, rows.value.length, ...returnedData)
+
+  pagination.value.page = page
+  pagination.value.rowsPerPage = rowsPerPage
+  pagination.value.sortBy = sortBy
+  pagination.value.descending = descending
+
+  loading.value = false
+}
+
+onMounted(async () => {
+  await tableRef.value.requestServerInteraction()
+})
+</script>

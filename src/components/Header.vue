@@ -26,8 +26,7 @@
     </q-btn-dropdown>
     <q-btn-dropdown label="Settings">
       <div class="row no-wrap q-pa-md">
-        <!-- @change="" -->
-        <q-checkbox v-model="darkMode" label="Dark Mode" />
+        <q-checkbox v-model="darkMode" label="Dark Mode" @update:model-value="toggleDarkMode" />
       </div>
     </q-btn-dropdown>
     <ProfilePicture />
@@ -35,7 +34,7 @@
 </template>
 
 <script setup>
-import { ref, inject, watch } from 'vue'
+import { ref, inject } from 'vue'
 import ProfilePicture from './ProfilePicture.vue'
 import { EVENT_KEYS } from '../utils/eventKeys.js'
 import ShoppingCart from './ShoppingCart.vue'
@@ -75,9 +74,9 @@ function changeOrdering(value) {
   bus.emit(EVENT_KEYS.ORDER_CRITERIA, orderBy.value)
 }
 
-watch(darkMode, () => {
+function toggleDarkMode() {
   $q.dark.toggle()
   setDarkMode($q.dark.isActive)
-})
+}
 
 </script>

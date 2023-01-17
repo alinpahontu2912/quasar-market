@@ -1,5 +1,5 @@
 <template>
-  <q-expansion-item :header-inset-level="1" expand-separator :icon=props.icon :label="$t(props.page)" default-closed>
+  <q-expansion-item :header-inset-level="1" expand-separator :icon=icon :label="$t(page)" default-closed>
     <PageRoute v-for="item in items" :key="item.id" :pageName="item.pageName" :pageRoute="item.pageRoute" />
   </q-expansion-item>
 </template>

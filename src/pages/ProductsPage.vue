@@ -25,7 +25,7 @@ const orderCriteria = ref('id')
 const orderType = ref('ASC')
 
 const bus = inject('bus')
-const { loadPage } = useHttpQuery()
+const { loadInfScrollPage } = useHttpQuery()
 
 bus.on(EVENT_KEYS.CHANGE_PAGE_SIZE, (newSize) => {
   pageSize.value = newSize
@@ -40,7 +40,7 @@ bus.on(EVENT_KEYS.ORDER_TYPE, (newOrderType) => {
 })
 
 async function onLoad(index, done) {
-  await loadPage(index, pageSize.value, orderCriteria.value, orderType.value, done, items.value)
+  await loadInfScrollPage(index, pageSize.value, orderCriteria.value, orderType.value, done, items.value)
 }
 
 </script>

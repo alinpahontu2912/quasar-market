@@ -1,7 +1,7 @@
 /* eslint-disable no-extra-boolean-cast */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import useLocalStorage from '../compositionFunctions/useLocalStorage'
+import useLocalStorage from 'src/compositionFunctions/useLocalStorage'
 const { updateCart, retrieveCartData } = useLocalStorage()
 
 export const useCartStore = defineStore('cart', () => {

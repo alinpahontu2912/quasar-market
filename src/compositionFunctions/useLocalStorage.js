@@ -5,7 +5,8 @@ const LOCAL_STORAGE_KEY = {
   CART_ITEMS: 'CartItems',
   TOTAL_PRODUCTS: 'numberOfProducts',
   DARK_MODE: 'darkMode',
-  USER_TOKEN: 'authenticaton_token'
+  USER_TOKEN: 'authenticaton_token',
+  USER_PERMISSION: 'userPermission'
 }
 
 export default function () {

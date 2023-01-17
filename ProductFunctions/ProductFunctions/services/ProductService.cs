@@ -30,66 +30,63 @@ namespace ProductFunctions
 
     }
 
-    public int getProductCount()
+    public int getProductCount(string filter)
     {
       int dbCount = 0;
       try
       {
         using (var dataBase = new TrainingAlinContext())
         {
-          dbCount = dataBase.Products.Count();
+          if (filter == null)
+          {
+            dbCount = dataBase.Products.Count();
+          }
+          else
+          {
+            dbCount = dataBase.Products.Where(product => product.Name.Contains(filter)).Count();
+          }
+          return dbCount;
         }
-        return dbCount;
       }
       catch (Exception ex)
       {
         Console.WriteLine(ex.Message);
-        return dbCount;
+        return -1;
       }
 
     }
 
-    public List<Product> GetNewProducts(int pageNumber, int pageSize, string orderBy, string order)
+    public List<Product> GetNewProducts(int pageNumber, int pageSize, string orderBy, string order, string filter)
     {
-
-      int startIndex = -1, endIndex = -1;
-      string query = "";
       List<Product> newProducts = new();
-      int dbCount = getProductCount();
-      if (pageNumber * pageSize + pageSize <= dbCount)
-      {
-        startIndex = pageNumber * pageSize;
-        endIndex = startIndex + pageSize;
-      }
-      else if (pageNumber * pageSize + pageSize >= dbCount && pageNumber * pageSize <= dbCount)
-      {
-        int remainingPages = dbCount - pageNumber * pageSize;
-        startIndex = pageNumber * pageSize;
-        endIndex = startIndex + remainingPages;
-      }
       try
       {
         using (var dataBase = new TrainingAlinContext())
         {
+          var fitleredProducts = string.IsNullOrEmpty(filter) ? dataBase.Products :
+              dataBase.Products.Where(product => product.Name.Contains(filter));
+          int dbCount = fitleredProducts.ToList().Count;
+          int skip = pageNumber * pageSize;
+          int take = dbCount < (pageNumber + 1) * pageSize ? dbCount - pageNumber * pageSize : pageSize;
           switch (orderBy)
           {
             case "price":
               if (order == "ASC")
-                newProducts = dataBase.Products.OrderBy(product => product.Price).Where(product => product.Id >= startIndex && product.Id < endIndex).ToList();
+                newProducts = fitleredProducts.OrderBy(product => product.Price).Skip(skip).Take(take).ToList();
               else
-                newProducts = dataBase.Products.OrderByDescending(product => product.Price).Where(product => product.Id >= startIndex && product.Id < endIndex).ToList();
+                newProducts = fitleredProducts.OrderByDescending(product => product.Price).Skip(skip).Take(take).ToList();
               break;
             case "name":
               if (order == "ASC")
-                newProducts = dataBase.Products.OrderBy(product => product.Name).Where(product => product.Id >= startIndex && product.Id < endIndex).ToList();
+                newProducts = fitleredProducts.OrderBy(product => product.Name).Skip(skip).Take(take).ToList();
               else
-                newProducts = dataBase.Products.OrderByDescending(product => product.Name).Where(product => product.Id >= startIndex && product.Id < endIndex).ToList();
+                newProducts = fitleredProducts.OrderByDescending(product => product.Name).Skip(skip).Take(take).ToList();
               break;
             default:
               if (order == "ASC")
-                newProducts = dataBase.Products.OrderBy(product => product.Id).Where(product => product.Id >= startIndex && product.Id < endIndex).ToList();
+                newProducts = fitleredProducts.OrderBy(product => product.Id).Skip(skip).Take(take).ToList();
               else
-                newProducts = dataBase.Products.OrderByDescending(product => product.Id).Where(product => product.Id >= startIndex && product.Id < endIndex).ToList();
+                newProducts = fitleredProducts.OrderByDescending(product => product.Id).Skip(skip).Take(take).ToList();
               break;
           }
           return newProducts;

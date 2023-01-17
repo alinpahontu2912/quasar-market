@@ -1,6 +1,7 @@
 import { store } from 'quasar/wrappers'
 import { createPinia } from 'pinia'
-
+import { markRaw } from 'vue'
+import { useRouter } from 'vue-router'
 /*
  * If not building with SSR mode, you can
  * directly export the Store instantiation;
@@ -15,6 +16,7 @@ export default store((/* { ssrContext } */) => {
 
   // You can add Pinia plugins here
   // pinia.use(SomePiniaPlugin)
+  pinia.use(({ store }) => { store.router = markRaw(useRouter()) })
 
   return pinia
 })

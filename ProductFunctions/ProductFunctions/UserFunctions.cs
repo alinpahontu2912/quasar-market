@@ -15,29 +15,42 @@ namespace StoreFunctions
 
     static UserService userService = new();
 
-    [FunctionName("users")]
-    public static async Task<IActionResult> GetUser(
-        [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
+    [FunctionName("LogInUser")]
+    public static async Task<IActionResult> LogIn(
+        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "users")] HttpRequest req,
         ILogger log)
     {
       string email = req.Query["user"];
       string password = req.Query["pswd"];
-      bool successfull = userService.FindUser(email, password) != null;
-      return successfull ? new OkObjectResult(Utils.getJWTToken(email))
+      User wantedUser = await userService.LogInUser(email, password);
+      bool successfull = wantedUser != null;
+      return successfull ? new OkObjectResult(Utils.getJWTToken(wantedUser))
       : new BadRequestObjectResult("Credentials are not correct");
     }
 
-    [FunctionName("createUsers")]
+    [FunctionName("CreateUser")]
     public static async Task<IActionResult> CreateUser(
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "users/add/")] HttpRequest req,
         ILogger log)
     {
       string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-      User newUser = JsonConvert.DeserializeObject<User>(requestBody);
+      User newUser = JsonConvert.DeserializeObject<User>(requestBody, Utils.deserializeSettings);
       bool succesfull = await userService.AddNewUser(newUser);
-      return succesfull ? new OkObjectResult(Utils.getJWTToken(newUser.Email))
+      return succesfull ? new OkObjectResult(Utils.getJWTToken(newUser))
         : new BadRequestObjectResult("Not a valid user");
     }
+
+    [FunctionName("RefreshToken")]
+    public static async Task<IActionResult> RefreshSession(
+        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "refresh")] HttpRequest req,
+        ILogger log)
+    {
+      User wantedUser = await userService.GetNewRefreshToken(req);
+      bool successfull = wantedUser != null;
+      return successfull ? new OkObjectResult(Utils.getJWTToken(wantedUser))
+      : new BadRequestObjectResult("Credentials are not correct");
+    }
+
 
     [FunctionName("usersTest")]
     public static async Task<IActionResult> TestAuth(

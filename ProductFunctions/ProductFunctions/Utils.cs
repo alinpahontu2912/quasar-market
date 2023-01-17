@@ -1,36 +1,72 @@
-
-using JWT;
-using JWT.Algorithms;
-using JWT.Serializers;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Text;
-using XAct;
 
-using XSystem.Security.Cryptography;
 
 namespace StoreFunctions
 {
   public static class Utils
   {
     private static JWTGenerator JWTgenerator = new();
-
-    public static string getJWTToken(string userMail)
+    private static int saltLengthLimit = 32;
+    public static JsonSerializerSettings deserializeSettings = new JsonSerializerSettings
     {
-      return JWTgenerator.IssuingJWT(userMail);
+      NullValueHandling = NullValueHandling.Ignore,
+      MissingMemberHandling = MissingMemberHandling.Ignore,
+      ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+    };
+
+
+    private static byte[] GetSalt()
+    {
+      return GetSalt(saltLengthLimit);
+    }
+    private static byte[] GetSalt(int maximumSaltLength)
+    {
+      var salt = new byte[maximumSaltLength];
+      using (var random = new RNGCryptoServiceProvider())
+      {
+        random.GetNonZeroBytes(salt);
+      }
+
+      return salt;
     }
 
-    public static ValidateJWT verifyJWTToken(HttpRequest req) {
+    public static string GenerateRefreshToken()
+    {
+      var randomNumber = new byte[32];
+      using (var rng = RandomNumberGenerator.Create())
+      {
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
+      }
+    }
+
+    public static string getJWTToken(User user)
+    {
+      return JWTgenerator.IssuingJWT(user);
+    }
+
+    public static ValidateJWT verifyJWTToken(HttpRequest req)
+    {
       return new ValidateJWT(req);
     }
 
-    public static string hashPassword(string password)
+    public static string hashPassword(string password, string salt)
     {
-      var md5 = new MD5CryptoServiceProvider();
-      var md5data = md5.ComputeHash(password.ToByteArray());
-      Console.WriteLine(Encoding.UTF8.GetString(md5data));
-      return Encoding.UTF8.GetString(md5data);
+      string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(password: password!, salt: Encoding.ASCII.GetBytes(salt), prf: KeyDerivationPrf.HMACSHA256, iterationCount: 15, numBytesRequested: 32));
+      return hashed;
+    }
+
+    public static void secureUserFields(User user)
+    {
+      user.RefreshToken = GenerateRefreshToken();
+      user.HashSalt = Encoding.UTF8.GetString(GetSalt());
+      user.HashPass = hashPassword(user.HashPass, user.HashSalt);
+
     }
 
   }
