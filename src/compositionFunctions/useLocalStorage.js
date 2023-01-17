@@ -1,4 +1,6 @@
-import { LocalStorage } from 'quasar'
+import { LocalStorage, SessionStorage } from 'quasar'
+import { useStorage } from '@vueuse/core'
+
 const LOCAL_STORAGE_KEY = {
   PROFILE_PICTURE: 'ProfilePicture',
   GRID_ITEMS: 'GridItems',
@@ -10,6 +12,11 @@ const LOCAL_STORAGE_KEY = {
 }
 
 export default function () {
+  const theDefault = {
+    items: retrieveCartData()
+  }
+  const cartState = useStorage(LOCAL_STORAGE_KEY.CART_ITEMS, [])
+
   function saveUserData(auth_token) {
     try {
       LocalStorage.set(LOCAL_STORAGE_KEY.USER_TOKEN, auth_token)
@@ -99,6 +106,8 @@ export default function () {
     setDarkMode,
     retrieveDarkMode,
     saveUserData,
-    retrieveUserData
+    retrieveUserData,
+    cartState,
+    theDefault
   }
 }

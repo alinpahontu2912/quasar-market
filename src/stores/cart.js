@@ -1,35 +1,30 @@
 /* eslint-disable no-extra-boolean-cast */
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import useLocalStorage from 'src/compositionFunctions/useLocalStorage'
-const { updateCart, retrieveCartData } = useLocalStorage()
+const { cartState } = useLocalStorage()
 
 export const useCartStore = defineStore('cart', () => {
-  const products = ref(retrieveCartData())
-
   function addProduct(product, quantity) {
-    const index = products.value.findIndex(productInCart => productInCart.id === product.id)
+    const index = cartState.value.findIndex(productInCart => productInCart.id === product.id)
     if (index !== -1) {
-      products.value[index].quantity += quantity
+      cartState.value[index].quantity += quantity
     } else {
-      products.value.push({ ...product, quantity })
+      cartState.value.push({ ...product, quantity })
     }
-    updateCart(products.value)
   }
 
   function removeProduct(product) {
-    const index = products.value.findIndex(productInCart => productInCart.id === product.id)
+    const index = cartState.value.findIndex(productInCart => productInCart.id === product.id)
     if (index !== -1) {
-      products.value.splice(index, 1)
-      updateCart(products.value)
+      cartState.value.splice(index, 1)
     }
   }
 
   function getNumberOfProducts() {
-    return products.value.reduce((accumulator, value) => {
+    return cartState.value.reduce((accumulator, value) => {
       return accumulator + value.quantity
     }, 0)
   }
 
-  return { products, getNumberOfProducts, addProduct, removeProduct }
+  return { cartState, getNumberOfProducts, addProduct, removeProduct }
 })
